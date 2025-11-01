@@ -20,15 +20,6 @@ def isCollistionWall(position: pygame.Vector2, screen: pygame.Surface) -> tuple[
         return (1, 0)
     if position.y < 0:
         return (0, 1)
-    
-    # if position.x > screen.get_width() and position.y > screen.get_height():
-    #     return (1, 1)
-    # if position.x < 0 and position.y < 0:
-    #     return (-1, -1)
-    # if position.x > screen.get_width() and position.y < 0:
-    #     return (-1, 1)
-    # if position.x > 0 and position.y > screen.get_height():
-    #     return (1, -1)
 
     return (0, 0)
 
@@ -101,9 +92,6 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     pause= not pause
-                
-                
-
 
         screen.fill("black")
 
@@ -111,9 +99,6 @@ def main():
         for i in range(num):
             pygame.draw.circle(screen, balls[i].color, balls[i].position, balls[i].radius)
             if not pause:
-                # if killBall(velocities[i]):
-                #     velocities[i] = pygame.Vector2(0, 0)
-
                 position, velocity = physics(screen, balls[i].position, balls[i].velocity,[x.position for x in balls], radius=radius + 50)
                 balls[i].velocity = velocity
                 balls[i].position = position
