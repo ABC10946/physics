@@ -2,13 +2,18 @@ import pygame
 import random
 import uuid
 
-class Ball:
+class PhysicsObjectBase:
+    def __init__(self):
+        self.uuid = uuid.uuid4()
+
+
+class Ball(PhysicsObjectBase):
     def __init__(self, position: pygame.Vector2, velocity: pygame.Vector2, color: tuple[float, float, float], radius: float):
+        super().__init__()
         self.position = position
         self.velocity = velocity
         self.color = color
         self.radius = radius
-        self.uuid = uuid.uuid4()
 
 
 def isCollistionWall(position: pygame.Vector2, screen: pygame.Surface) -> tuple[int, int]:
@@ -27,7 +32,6 @@ def isCollisionBall(position: pygame.Vector2, positions: list[pygame.Vector2], r
     for i in positions:
         dist = (i.x - position.x) * (i.x - position.x) + (i.y - position.y) * (i.y - position.y)
         if 25 < dist and dist < radius * radius:
-            print("ball collision", dist, i, position)
             return True
 
     return False
@@ -71,14 +75,16 @@ def main():
     clock = pygame.time.Clock()
 
     balls: list[Ball] = []
-    num = 100
+    num = 50
     radius = 50
 
     for _ in range(num):
         position = pygame.Vector2(screen.get_width() * random.random() , screen.get_height() * random.random())
         velocity = pygame.Vector2(random.random() * 10, random.random() * 10)
         color = (random.random() * 255, random.random() * 255, random.random() * 255)
-        balls.append(Ball(position, velocity, color, radius))
+        ball = Ball(position, velocity, color, radius)
+        print(ball.uuid)
+        balls.append(ball)
 
 
 
