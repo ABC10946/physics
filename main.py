@@ -1,5 +1,15 @@
 import pygame
 import random
+import uuid
+
+class Ball:
+    def __init__(self, position: pygame.Vector2, velocity: pygame.Vector2, color: tuple[float, float, float], radius: float):
+        self.position = position
+        self.velocity = velocity
+        self.color = color
+        self.radius = radius
+        self.uuid = uuid.uuid4()
+
 
 def isCollistionWall(position: pygame.Vector2, screen: pygame.Surface) -> tuple[int, int]:
     if position.x > screen.get_width():
@@ -69,19 +79,15 @@ def main():
     screen = pygame.display.set_mode((1280, 720))
     clock = pygame.time.Clock()
 
-    positions = []
-    velocities = []
-    colors = []
-    num = 10
+    balls: list[Ball] = []
+    num = 100
     radius = 50
 
     for _ in range(num):
         position = pygame.Vector2(screen.get_width() * random.random() , screen.get_height() * random.random())
         velocity = pygame.Vector2(random.random() * 10, random.random() * 10)
         color = (random.random() * 255, random.random() * 255, random.random() * 255)
-        positions.append(position)
-        velocities.append(velocity)
-        colors.append(color)
+        balls.append(Ball(position, velocity, color, radius))
 
 
 
@@ -103,14 +109,14 @@ def main():
 
 
         for i in range(num):
-            pygame.draw.circle(screen, colors[i], positions[i], radius)
+            pygame.draw.circle(screen, balls[i].color, balls[i].position, balls[i].radius)
             if not pause:
                 # if killBall(velocities[i]):
                 #     velocities[i] = pygame.Vector2(0, 0)
 
-                position, velocity = physics(screen, positions[i], velocities[i], positions, radius=radius + 50)
-                velocities[i] = velocity
-                positions[i] = position
+                position, velocity = physics(screen, balls[i].position, balls[i].velocity,[x.position for x in balls], radius=radius + 50)
+                balls[i].velocity = velocity
+                balls[i].position = position
 
         pygame.display.flip()
 
