@@ -1,19 +1,21 @@
 import pygame
 import random
 import uuid
+import math
 
 class PhysicsObjectBase:
-    def __init__(self):
+    def __init__(self, position: pygame.Vector2, velocity: pygame.Vector2, activate: bool=True):
         self.uuid = uuid.uuid4()
+        self.position = position
+        self.velocity = velocity
+        self.activate = activate
 
 
 class Ball(PhysicsObjectBase):
     def __init__(self, position: pygame.Vector2, velocity: pygame.Vector2, color: tuple[float, float, float], radius: float):
-        super().__init__()
-        self.position = position
-        self.velocity = velocity
-        self.color = color
+        super().__init__(position, velocity)
         self.radius = radius
+        self.color = color
 
 
 def isCollistionWall(position: pygame.Vector2, screen: pygame.Surface) -> tuple[int, int]:
@@ -28,18 +30,23 @@ def isCollistionWall(position: pygame.Vector2, screen: pygame.Surface) -> tuple[
 
     return (0, 0)
 
-def isCollisionBall(position: pygame.Vector2, positions: list[pygame.Vector2], radius: float=10) -> bool:
-    for i in positions:
-        dist = (i.x - position.x) * (i.x - position.x) + (i.y - position.y) * (i.y - position.y)
-        if 25 < dist and dist < radius * radius:
-            return True
+def isCollisionBall(pObject: PhysicsObjectBase, pObjects: list[PhysicsObjectBase], radius: float) -> tuple[bool, PhysicsObjectBase|None]:
+    for i in pObjects:
+        position = pObject.position
+        if i.uuid != pObject.uuid and i.activate:
+            dist = (i.position.x - position.x) * (i.position.x - position.x) + (i.position.y - position.y) * (i.position.y - position.y)
+            if dist < radius * radius:
+                return True, i
 
-    return False
+    return False, None
 
 
 
-def physics(screen: pygame.Surface, position: pygame.Vector2, velocity: pygame.Vector2, positions: list[pygame.Vector2], mass: float=1.0, gravity: float=1.0, radius: float=10.0) -> tuple[pygame.Vector2, pygame.Vector2]:
-    bounceE = 0.999999
+def physics(screen: pygame.Surface, pObject: PhysicsObjectBase, pObjects: list[PhysicsObjectBase], mass: float, gravity: float, radius: float) -> tuple[pygame.Vector2, pygame.Vector2]:
+    bounceE = 0.9
+    velocity = pObject.velocity
+    position = pObject.position
+
     velocity.y = velocity.y + gravity * mass * 1/2
     isCollision = isCollistionWall(position, screen)
 
@@ -56,34 +63,43 @@ def physics(screen: pygame.Surface, position: pygame.Vector2, velocity: pygame.V
             position.y = screen.get_height() - 1
         velocity.y = -1 * bounceE * velocity.y
     
-    if isCollisionBall(position, positions, radius):
-        velocity.x *= -1
-        velocity.y *= -1
+    isCollision, collision = isCollisionBall(pObject, pObjects, radius)
+
+    if isCollision:
+        immersedDist = math.sqrt( (radius * radius) - ((position.x - collision.position.x) * (position.x - collision.position.x) + (position.y - collision.position.y) * (position.y - collision.position.y)) )
+        vector = pygame.Vector2(position.x - collision.position.x, position.y - collision.position.y)
+        immersedDistVect = immersedDist * vector.normalize()
+        print(immersedDistVect)
+        position.x = position.x + immersedDistVect.x
+        position.y = position.y + immersedDistVect.y
+        velocity.x = -1 * bounceE * velocity.x
+        velocity.y = -1 * bounceE * velocity.y
+            
+
 
     position.x = position.x + velocity.x
     position.y = position.y + velocity.y * 1/2
     return (position, velocity)
 
 
-def killBall(velocity: pygame.Vector2):
-    return velocity.x * velocity.x + velocity.y + velocity.y < 0.01
+def isKillBall(velocity: pygame.Vector2):
+    return velocity.x * velocity.x + velocity.y * velocity.y < 0.0000001
 
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((1280, 720))
+    screen = pygame.display.set_mode((1280 * 2, 720 * 2))
     clock = pygame.time.Clock()
 
     balls: list[Ball] = []
-    num = 50
-    radius = 50
+    num = 25
+    radius = 40
 
     for _ in range(num):
         position = pygame.Vector2(screen.get_width() * random.random() , screen.get_height() * random.random())
         velocity = pygame.Vector2(random.random() * 10, random.random() * 10)
         color = (random.random() * 255, random.random() * 255, random.random() * 255)
         ball = Ball(position, velocity, color, radius)
-        print(ball.uuid)
         balls.append(ball)
 
 
@@ -92,22 +108,27 @@ def main():
     running = True
     pause = False
     while running:
+        step = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     pause= not pause
+                if event.key == pygame.K_s:
+                    step = True
 
         screen.fill("black")
 
 
         for i in range(num):
-            pygame.draw.circle(screen, balls[i].color, balls[i].position, balls[i].radius)
-            if not pause:
-                position, velocity = physics(screen, balls[i].position, balls[i].velocity,[x.position for x in balls], radius=radius + 50)
-                balls[i].velocity = velocity
-                balls[i].position = position
+            if balls[i].activate:
+                pygame.draw.circle(screen, balls[i].color, balls[i].position, balls[i].radius)
+                if not pause:
+                    position, velocity = physics(screen, balls[i], balls , 1.0, 9.8, radius)
+                    balls[i].velocity = velocity
+                    balls[i].position = position
+                
 
         pygame.display.flip()
 
